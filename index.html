@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Photo Feed</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#120018;
+color:white;
+}
+
+header{
+padding:15px;
+background:#2a0033;
+display:flex;
+gap:10px;
+}
+
+input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+background:#b300ff;
+color:white;
+cursor:pointer;
+}
+
+.post{
+background:#2a0033;
+margin:15px;
+padding:10px;
+border-radius:12px;
+}
+
+.post img{
+width:100%;
+border-radius:10px;
+margin-top:10px;
+}
+
+.like{
+cursor:pointer;
+color:#ff4df0;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<input id="imgUrl" placeholder="Вставь URL картинки...">
+<input id="username" placeholder="Имя (например madkid)">
+<button onclick="uploadPost()">Опубликовать</button>
+</header>
+
+<div id="feed"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+getFirestore, collection, addDoc, query, onSnapshot,
+orderBy, serverTimestamp, doc, updateDoc, increment
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDaLvdIfjj-umESHuhV-6zOlEZLLoX-YaU",
+  authDomain: "ffedd-c2a16.firebaseapp.com",
+  projectId: "ffedd-c2a16",
+  storageBucket: "ffedd-c2a16.firebasestorage.app",
+  messagingSenderId: "507464670915",
+  appId: "1:507464670915:web:20cc32be4d9f6968528c76",
+  measurementId: "G-4TCSE810ES"
+};
+
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* 📤 ПУБЛИКАЦИЯ ПОСТА */
+window.uploadPost = async function(){
+const url = document.getElementById("imgUrl").value;
+const user = document.getElementById("username").value;
+
+if(!url || !user) return;
+
+await addDoc(collection(db,"posts"),{
+image:url,
+user:user,
+likes:0,
+createdAt:serverTimestamp()
+});
+
+document.getElementById("imgUrl").value="";
+}
+
+/* ❤️ ЛАЙК */
+window.likePost = async function(id){
+const ref = doc(db,"posts",id);
+await updateDoc(ref,{
+likes: increment(1)
+});
+}
+
+/* 📡 ЛЕНТА */
+const q = query(collection(db,"posts"),orderBy("createdAt","desc"));
+
+onSnapshot(q,(snap)=>{
+const feed = document.getElementById("feed");
+feed.innerHTML="";
+
+snap.forEach(docu=>{
+const d = docu.data();
+
+feed.innerHTML += `
+<div class="post">
+<b>${d.user}</b>
+
+<img src="${d.image}"/>
+
+<div onclick="likePost('${docu.id}')" class="like">
+❤️ ${d.likes}
+</div>
+</div>
+`;
+});
+});
+</script>
+
+</body>
+</html>
