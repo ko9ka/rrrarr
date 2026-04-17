@@ -129,6 +129,7 @@ likes: increment(1)
    ❓ ЗАДАТЬ ВОПРОС
 ========================= */
 window.askQuestion = async function(){
+try {
 const text = prompt("Задай вопрос:");
 const user = document.getElementById("username").value || "anon";
 
@@ -140,8 +141,13 @@ user:user,
 createdAt:serverTimestamp()
 });
 
+console.log("QUESTION SAVED");
 alert("Вопрос отправлен!");
+} catch(e){
+console.error("ERROR:", e);
+alert("Ошибка: " + e.message);
 }
+};
 
 /* =========================
    📡 ПОСТЫ ЛЕНТА
