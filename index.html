@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>meowmmm</title>
+<title>meowww</title>
 
 <style>
 body{
@@ -55,6 +55,11 @@ cursor:pointer;
 color:#ff4df0;
 margin-top:5px;
 }
+
+#supportBtn{
+margin:10px 15px;
+width:calc(100% - 30px);
+}
 </style>
 </head>
 
@@ -62,9 +67,11 @@ margin-top:5px;
 
 <header>
 <input id="imgUrl" placeholder="Вставь URL картинки...">
-<input id="username" placeholder="Имя (например madkid)">
+<input id="username" placeholder="Имя">
 <button onclick="uploadPost()">Опубликовать</button>
 </header>
+
+<button id="supportBtn" onclick="openSupport()">❓ Есть вопросы? Напишите нам</button>
 
 <div id="feed"></div>
 
@@ -96,9 +103,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* =========================
-   📤 ПУБЛИКАЦИЯ ПОСТА
-========================= */
+let allPosts = [];
+
+/* =====================
+   📸 POST
+===================== */
 window.uploadPost = async function(){
 const url = document.getElementById("imgUrl").value;
 const user = document.getElementById("username").value;
@@ -113,51 +122,21 @@ createdAt:serverTimestamp()
 });
 
 document.getElementById("imgUrl").value="";
-}
-
-/* =========================
-   ❤️ ЛАЙК
-========================= */
-window.likePost = async function(id){
-const ref = doc(db,"posts",id);
-await updateDoc(ref,{
-likes: increment(1)
-});
-}
-
-/* =========================
-   ❓ ЗАДАТЬ ВОПРОС
-========================= */
-window.askQuestion = async function(){
-try {
-const text = prompt("Задай вопрос:");
-const user = document.getElementById("username").value || "anon";
-
-if(!text) return;
-
-await addDoc(collection(db,"questions"),{
-question:text,
-user:user,
-createdAt:serverTimestamp()
-});
-
-console.log("QUESTION SAVED");
-alert("Вопрос отправлен!");
-} catch(e){
-console.error("ERROR:", e);
-alert("Ошибка: " + e.message);
-}
 };
 
-/* =========================
-   📡 ПОСТЫ ЛЕНТА
-========================= */
-const postsQuery = query(
-collection(db,"posts"),
-orderBy("createdAt","desc")
-);
+/* =====================
+   ❤️ LIKE
+===================== */
+window.likePost = async function(id){
+await updateDoc(doc(db,"posts",id),{
+likes: increment(1)
+});
+};
 
-let allPosts = [];
+/* =====================
+   📡 POSTS FEED
+===================== */
+const postsQuery = query(collection(db,"posts"),orderBy("createdAt","desc"));
 
 onSnapshot(postsQuery,(snap)=>{
 const feed = document.getElementById("feed");
@@ -171,9 +150,7 @@ allPosts.push({id:docu.id,...d});
 feed.innerHTML += `
 <div class="post">
 <b>${d.user}</b>
-
 <img src="${d.image}"/>
-
 <div class="like" onclick="likePost('${docu.id}')">
 ❤️ ${d.likes}
 </div>
@@ -182,9 +159,9 @@ feed.innerHTML += `
 });
 });
 
-/* =========================
-   🔎 ПОИСК
-========================= */
+/* =====================
+   🔎 SEARCH
+===================== */
 window.searchPosts = function(text){
 const feed = document.getElementById("feed");
 feed.innerHTML="";
@@ -207,57 +184,48 @@ feed.innerHTML += `
 });
 };
 
-/* =========================
-   ❓ ПОКАЗ ВОПРОСОВ
-========================= */
-const questionsQuery = query(
-collection(db,"questions"),
-orderBy("createdAt","desc")
-);
+/* =====================
+   ❓ SUPPORT FORM
+===================== */
+window.openSupport = function(){
+const name = prompt("Ваше имя:");
+const phone = prompt("Ваш номер телефона:");
+const message = prompt("Ваш вопрос:");
 
-onSnapshot(questionsQuery,(snap)=>{
-
-let box = document.getElementById("questionsBox");
-
-if(!box){
-box = document.createElement("div");
-box.id = "questionsBox";
-box.style.margin = "15px";
-box.style.padding = "10px";
-box.style.background = "#2a0033";
-box.style.borderRadius = "12px";
-document.body.appendChild(box);
+if(!name || !phone){
+alert("Введите имя и телефон");
+return;
 }
 
-box.innerHTML = "<h3>❓ Вопросы</h3>";
+saveContact(name, phone, message);
+};
 
-snap.forEach(docu=>{
-const q = docu.data();
-
-box.innerHTML += `
-<div style="margin-top:10px;padding:8px;background:#3a004a;border-radius:8px;">
-<b>${q.user}</b>: ${q.question}
-</div>
-`;
+async function saveContact(name, phone, message){
+try{
+await addDoc(collection(db,"contacts"),{
+name,
+phone,
+message: message || "",
+createdAt:serverTimestamp()
 });
-});
 
-/* =========================
-   🔎 UI ПОИСК И КНОПКА ВОПРОСОВ
-========================= */
+alert("Мы получили вашу заявку и скоро свяжемся с вами!");
+}
+catch(e){
+alert("Ошибка: " + e.message);
+}
+}
+
+/* =====================
+   🔎 UI SEARCH BAR
+===================== */
 const searchBox = document.createElement("input");
 searchBox.placeholder = "🔎 Поиск постов...";
 searchBox.style.margin = "10px 15px";
 searchBox.style.width = "calc(100% - 30px)";
-searchBox.style.display = "block";
 searchBox.oninput = (e)=>searchPosts(e.target.value);
-document.body.insertBefore(searchBox, document.getElementById("feed"));
 
-const qBtn = document.createElement("button");
-qBtn.innerText = "❓ Задать вопрос";
-qBtn.style.margin = "0 15px";
-qBtn.onclick = askQuestion;
-document.body.insertBefore(qBtn, document.getElementById("feed"));
+document.body.insertBefore(searchBox, document.getElementById("feed"));
 
 </script>
 
